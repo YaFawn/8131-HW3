@@ -1,0 +1,86 @@
+---
+title: "8131 HW3"
+output: html_document
+date: "2023-02-26"
+---
+
+# problem 1
+```{r}
+# fit a prospective model using default logit link
+age = c(25,35,45,55,65,75,25,35,45,55,65,75)
+case = c(1,4,25,42,19,5,0,5,21,34,36,8)
+control =  c(9,26,29,27,18,0,106,164,138,139,88,31)
+exposure = c(1,1,1,1,1,1,0,0,0,0,0,0)
+prosp_model = glm(cbind(case, control)~exposure + age, family = binomial(link = 'logit'))
+summary(prosp_model)
+```
+
+```{r}
+# compare two nested models
+library(psych)
+age_level = as.factor(age)
+# M_0, model under null hypothesis
+M0 = glm(cbind(case, control) ~ age_level, family = binomial(link = 'logit'))
+# M_1, model under alternative hypothesis
+M1 = glm(cbind(case, control) ~ age_level + exposure, family = binomial(link = 'logit'))
+summary(M0)
+summary(M1)
+# deviance analysis
+p_val = 1 - pchisq(90.563-11.041, df = 1)
+```
+
+# problem 2
+```{r}
+# data entry for models building
+num_germ = c(10,23,23,26,17,5,53,55,32,46,10,8,10,8,23,0,3,22,15,32,3)
+num_seed = c(39,62,81,51,39,6,74,72,51,79,13,16,30,28,45,4,12,41,30,51,7)
+# O.aegyptiaca75 = 1
+type_of_seed = c(rep(1,11), rep(0,10))
+# bean = 1
+root_extract = c(rep(1,5), rep(0,6), rep(1,5), rep(0,5))
+```
+
+```{r}
+# fit the model without dispersion
+none.disp = glm(cbind(num_germ, num_seed-num_germ)~type_of_seed+root_extract, family = binomial(link = 'logit'))
+summary(none.disp)
+```
+
+```{r}
+# goodness of fit
+p_val_disp = 1-pchisq(none.disp$deviance,21-3)
+p_val_disp
+# small p-value, a bad indication because it means lack of fit, so there might be an over-dispersion
+```
+
+```{r}
+# find out the dispersion parameter
+G.stat = sum(residuals(none.disp,type = 'pearson')^2)
+G.stat
+phi = G.stat/(21-3)
+phi
+# phi = 2.128 which means there is an over-dispersion which should be take into account
+```
+
+```{r}
+# test over-dispersion (half normal plot)
+res = residuals(none.disp, type = 'pearson')
+plot(qnorm((21+1:21+0.5)/(2*21+1.125)),sort(abs(res)),
+     xlab = 'Expected Half_Normal Order Stats',
+     ylab = 'Ordered Abs Pearson Residual', ylim = c(0,5),xlim = c(0,5))
+abline(a=0,b=1,col=1)
+abline(a=0,b=sqrt(phi),lty=2,col=2)
+```
+
+```{r}
+# fit the model with dispersion
+summary(none.disp,dispersion = phi)
+```
+
+
+
+
+
+
+
+
